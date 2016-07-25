@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-gass/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="081ced8ab77e606b6743c27cfe93dc450447b046">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-gass-9.2.1_1c43ce6c534b198ee71c2516fc2aa7e03b11abe5.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-maps/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="bbd51be332bace144b3d16501ec0af379c3c8750">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-maps-9.2.1_ae1ac2a17e708ff7577e5846cc4a085f6e1f0fdd.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/android-sdk-macosx/extras/android/m2repository/com/android/support/support-annotations/23.4.0/support-annotations-23.4.0.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="ffbe55fdb2bb456b1485831706a9eac3300bb6b8">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/support-annotations-23.4.0_cc323d431078b5a2af367b91c93baddcc3d3cca6.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/animated-vector-drawable/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="de4db3785756bfb0915a9f59a9b3f2fea7407be4">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-animated-vector-drawable-23.4.0_4b834f1e1de20ca873efd528731e439e1e879b3d.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-basement/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="6b896c1067633db41e9c10a3a5d0919c5c4cfc8c">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-basement-9.2.1_a288dcf3eb8a108c7580926e8de1896c4294cb76.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="548f06de403a9409f00554b3ee12a9fdea0e236c">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-appcompat-v7-23.4.0_a0741ac26d330e99d1fd1042c686c7bd007b3837.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-location/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="07c569a77f437c5c71eac8b1b636a50bebb69a93">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-location-9.2.1_26e2f9e6a1d33d9418bbff52be2c06ff9226e81f.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-tasks/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="819c2c3a4fb135e085445d11131d069cf9c32b2a">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-tasks-9.2.1_1dbcd016b9ba515a924788970a2058d535cff264.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-ads-lite/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="310ef01419435979cc82847cf085799a8d00e7e9">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-ads-lite-9.2.1_cd066c16f01f26f029bc7872c0631b1755f99a41.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/support-v4/23.4.0/jars/libs/internal_impl-23.4.0.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="ea3c07504d2c8f4b13aa17c45c1b68ed9c1c3674">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/internal_impl-23.4.0_50ccabe618aa20b8e385d301a7f4ecd1d9714f0b.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/recyclerview-v7/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="ec75036c3c52e451d0cde50a5aedaf5fd32354a0">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-recyclerview-v7-23.4.0_846ba4a2492a9365f63e6aabce005ea01e83abc6.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-clearcut/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="90eeba67a669f8fb24db0f821ef81703fe7a02bc">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-clearcut-9.2.1_e6b1361031021d34a488d4c826752daa39ae5b77.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/support-v4/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="67bd36ee9340ec7c254108936ad16b24bed160cc">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-support-v4-23.4.0_a2a33371026878704f5e54ba090e07a41a2a3ce9.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/design/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="5326d9a850d491714fef8cbfaa9ea3416f0bf0d2">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-design-23.4.0_cc85da75e9c5183d96fd602ece1e503170ba93e7.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/multidex/1.0.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="6666dd525c3da197e7d07f4f23ef5fc7881a697b">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-multidex-1.0.0_5130e081be97955fa568363be427e55b6f9e4fde.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-places/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="0979debb5b4d955ddc0e80bb192f4f00c2f91750">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-places-9.2.1_b256b70d8f9e82ca8e931827284db18ea9029674.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/libs/amazon-ads-5.7.2.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="ee3930de9c804816cf10e17006733ac96bf8adab">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/amazon-ads-5.7.2_d4aa1c34d3fd590b42ccbf03b6562cbda2fa8519.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/libs/PokeGOAPI-Java_bundle-0.0.1-SNAPSHOT.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="67bb17d3daf838fe04b8c690a22cc34a5c211718">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/PokeGOAPI-Java_bundle-0.0.1-SNAPSHOT_c6122cc22d9250f12f5561e9655ade46615274b5.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.android.support/support-vector-drawable/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="c2c594cace5d83a3227b2b6e658ecbfd586d3ed9">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.android.support-support-vector-drawable-23.4.0_950b4984f063925a81a5785d559948bce5381849.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-ads/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="6d2f508d1a9fa0fbe1653595e484800c08afb42c">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-ads-9.2.1_9ced01c96872bc6c30d989b737d0f2eafe816518.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.6.1/e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf/commons-math3-3.6.1.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/commons-math3-3.6.1_32dae8f703ce6983dd5a9c265af0a4a58136ca10.jar" />
+    </item>
+    <item
+        jar="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-base/9.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="24.0.0"
+        sha1="421b36cf4f0d3bbd75e8f28647fccf36674ef049">
+        <dex dex="/Users/patrickballard/Documents/LibGDX/Projects/PokeFinder/app/build/intermediates/pre-dexed/release/com.google.android.gms-play-services-base-9.2.1_172616cba2057e2ae62d40695e24e0b6b9235b58.jar" />
+    </item>
+
+</items>

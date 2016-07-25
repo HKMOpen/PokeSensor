@@ -1,0 +1,42 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:map="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                xmlns:ads="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context="com.logickllc.pokemapper.PokeFinderActivity"
+        tools:layout="@layout/abc_screen_simple"/>
+
+    <LinearLayout
+        android:id="@+id/adContainer"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:gravity="bottom">
+
+        <com.amazon.device.ads.AdLayout
+            android:id="@+id/primaryBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:gravity="bottom|center_horizontal" />
+
+        <com.google.android.gms.ads.AdView
+            android:id="@+id/secondaryBanner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:gravity="bottom|center_horizontal"
+            ads:adSize="SMART_BANNER"
+            ads:adUnitId="" />
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">PokeMapper</string>
+    <string name="title_activity_poke_finder">PokeMapper</string>
+
+    <string name="action_scan">Scan</string>
+    <string name="action_tuner">Scan Details</string>
+    <string name="action_search">Search</string>
+    <string name="action_logout">Logout</string>
+    <string name="action_help">Help</string>
+    <string name="action_about">About</string>
+    <string name="action_contactus">Contact Us</string>
+    <string name="action_twitter">Twitter</string>
+    <string name="action_facebook">Facebook</string>
+    <string name="action_moreapps">More Apps</string>
+
+    <string name="loginTitle">Login with a Pokemon Trainer Club account</string>
+    <string name="loginMessage">This is an unofficial login to the Pokemon Go servers, so you can scan for Pokemon without using a third-party server. Your credentials will not be remembered unless you allow it, and they will not be shared with anyone (besides the Pokemon Go servers).\n\nI recommend creating a dummy account to use with this app to make sure your real account does not get soft banned.\n\nLOGIN AT YOUR OWN RISK</string>
+    <string name="username">Enter PTC Username</string>
+    <string name="password">Enter PTC Password</string>
+    <string name="loginButton">Login</string>
+    <string name="cancelButton">Cancel</string>
+    <string name="loginSuccessfulMessage">Login successful</string>
+    <string name="loginFailedMessage">Login failed. Could be invalid credentials or servers could be down. Please try again in a few minutes.</string>
+    <string name="tryingLoginTitle">Logging in...</string>
+    <string name="tryingLoginMessage">Trying to login to Pokemon Go servers. This could take a while if the servers are overloaded.</string>
+    <string name="rememberLogin">Remember username and password</string>
+    <string name="createAccountMessage"><a href="https://www.pokemon.com/us/pokemon-trainer-club/sign-up/">Don\'t have an account? Create one!</a></string>
+    <string name="logoutTitle">Log out?</string>
+    <string name="logoutMessage">Are you sure you want to log out?</string>
+
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="ok">Ok</string>
+    <string name="getStarted">Get Started</string>
+
+    <string name="welcomeTitle">Welcome!</string>
+    <string name="welcomeMessage">Make sure to enable Location Services for the best app experience.\n\nWARNING: Be careful when using this app. Scanning could get your account banned, so use a dummy account for this app, or at least make the scans look believable. Have fun!</string>
+
+    <string name="abortScan">Scan aborted</string>
+    <string name="noLocationDetected">Cannot detect Location Services. Please enable Location Services for the best experience.</string>
+
+    <string name="tunerMessage">You can adjust the scan distance and total scan time. The scanner will scan from your position and from 8 surrounding positions which are determined by the scan distance. This will simulate you walking around a larger area, which gives better scan readings.\n\nBeware of setting values that give you an unreasonable simulated movement speed because that could increase the chances of your account getting banned.</string>
+    <string name="scanSpeedLabel">Your simulated movement speed is</string>
+    <string name="title_activity_tuner">Scan Details</string>
+
+    <string name="scanTitle">Scan</string>
+    <string name="scanDetailsTitle">Scan Details</string>
+    <string name="searchTitle">Search</string>
+
+    <string name="scanMessage">Scan your nearby area for Pokemon</string>
+    <string name="scanDetailsMessage">Set the distance and time of your scan</string>
+    <string name="searchMessage">Search for any location in the world to move to it</string>
+
+    <string name="aboutTitle">About</string>
+    <string name="aboutMessage">Made by Patrick Ballard (Logick LLC)\n\nUses PokeGOAPI-Java, available under GPLv3 License at https://github.com/Grover-c13/PokeGOAPI-Java\n\nUses the Trilateration library available under MIT License at https://github.com/lemmingapex/Trilateration\n\nUses the Apache Commons Math3 library available under Apache 2.0 License at http://commons.apache.org/proper/commons-math/download_math.cgi\n\nAction Bar Icons available at icons8.com\nMagnifying glass available under Creative Commons Attribution License at http://freedesignfile.com/\nPokeball image available under Creative Commons Attribution-ShareAlike License at https://commons.wikimedia.org/wiki/File:Poké_Ball.svg\nAvailable under GPLv3 License at https://github.com/MrPat/PokeMapper</string>
+</resources>

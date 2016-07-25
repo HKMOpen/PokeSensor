@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_scan"
+        android:icon="@drawable/ic_action_scan"
+        android:title="@string/action_scan"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_tuner"
+        android:icon="@drawable/ic_action_tuner"
+        android:title="@string/action_tuner"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_action_search"
+        android:title="@string/action_search"
+        app:showAsAction="ifRoom" />
+
+    <!--<item
+        android:id="@+id/action_help"
+        android:icon="@drawable/ic_action_help"
+        android:title="@string/action_help"
+        app:showAsAction="ifRoom" />-->
+
+    <item
+        android:id="@+id/action_logout"
+        android:icon="@drawable/ic_action_logout"
+        android:title="@string/action_logout"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_contactus"
+        android:icon="@drawable/ic_action_contactus"
+        android:title="@string/action_contactus"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_about"
+        android:icon="@drawable/ic_action_about"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_twitter"
+        android:icon="@drawable/ic_action_twitter"
+        android:title="@string/action_twitter"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_facebook"
+        android:icon="@drawable/ic_action_facebook"
+        android:title="@string/action_facebook"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_moreapps"
+        android:icon="@drawable/ic_action_moreapps"
+        android:title="@string/action_moreapps"
+        app:showAsAction="never" />
+</menu>
