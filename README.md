@@ -1,6 +1,5 @@
 # PokeMapper
-Official source for the PokeMapper Android app
-Official site is http://www.pokemapper.org
+Official source for the PokeMapper Android app. Official site is http://www.pokemapper.org
 
 ##Shoutouts
 ###Pokemon GO Java API
