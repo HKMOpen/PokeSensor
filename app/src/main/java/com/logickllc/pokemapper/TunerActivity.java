@@ -29,6 +29,8 @@ public class TunerActivity extends AppCompatActivity {
         scanDistance = prefs.getInt(PREF_SCAN_DISTANCE, DEFAULT_SCAN_DISTANCE);
         scanTime = prefs.getInt(PREF_SCAN_TIME, DEFAULT_SCAN_TIME);
 
+        if (scanDistance > 180) scanDistance = 180;
+
         final TextView distance = (TextView) findViewById(R.id.distance);
         final TextView time = (TextView) findViewById(R.id.time);
         SeekBar seekDistance = (SeekBar) findViewById(R.id.seekbarDistance);

@@ -27,9 +27,11 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,10 +70,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.lemmingapex.trilateration.NonLinearLeastSquaresSolver;
 import com.lemmingapex.trilateration.TrilaterationFunction;
 import com.logickllc.pokemapper.api.NearbyPokemonGPS;
+import com.logickllc.pokemapper.api.WildPokemonTime;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.map.MapObjects;
-import com.pokegoapi.api.map.Pokemon.CatchablePokemon;
-import com.pokegoapi.auth.PTCLogin;
+import com.pokegoapi.api.map.pokemon.CatchablePokemon;
+import com.pokegoapi.auth.PtcCredentialProvider;
 import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
 
@@ -79,6 +82,7 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
@@ -88,6 +92,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 import POGOProtos.Map.Pokemon.MapPokemonOuterClass;
 import POGOProtos.Map.Pokemon.NearbyPokemonOuterClass;
@@ -95,11 +100,11 @@ import POGOProtos.Map.Pokemon.WildPokemonOuterClass;
 import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass;
 import okhttp3.OkHttpClient;
 
+import android.view.ViewGroup.LayoutParams;
+
 public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private final String TAG = "PokeFinder";
-    private final double FAIRPARK_LAT = 34.2563300;
-    private final double FAIRPARK_LON = -88.7017310;
     private final int LOCATION_PERMISSION_REQUEST_CODE = 1776;
     private final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 1337;
     private final String PREFS_NAME = "PokefinderPrefs";
@@ -129,11 +134,11 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     private Marker myMarker;
     private boolean loggingIn = false;
     private ProgressDialog progressDialog;
-    private ArrayList<Marker> pokeMarkers = new ArrayList<Marker>();
+    private ConcurrentHashMap<Long, Marker> pokeMarkers = new ConcurrentHashMap<Long, Marker>();
     private int scanTime;
     private int scanDistance;
     private boolean locationOverride = false;
-    private final int MAX_SCAN_RADIUS = 200;
+    private final int MAX_SCAN_RADIUS = 100;
     private Circle scanCircle;
     private boolean locationInitialized = false;
     private final float DEFAULT_ZOOM = 17f;
@@ -143,7 +148,14 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     //private TourGuide mTutorialHandler;
     private boolean abortScan = false;
     private boolean abortLogin = false;
-
+    private static final BigInteger BI_2_64 = BigInteger.ONE.shiftLeft(64);
+    private ConcurrentHashMap<Long, WildPokemonTime> pokeTimes = new ConcurrentHashMap<Long, WildPokemonTime>();
+    private ArrayList<Long> noTimes = new ArrayList<Long>();
+    private Timer countdownTimer;
+    private int paddingLeft, paddingRight, paddingTop, paddingBottom;
+    private Marker scanPoint;
+    private BitmapDescriptor scanPointIcon;
+    private Circle scanPointCircle;
 
     // This manages all the timers I use and only lets them count down while the activity is in the foreground
     private AndroidTimerManager timerManager = new AndroidTimerManager();
@@ -152,8 +164,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     private boolean isActivityVisible = true;
 
     //These are all related to ads
-    public final boolean IS_AD_TESTING = false; // TODO Flag that determines whether to show test ads or live ads
-    public static final boolean IS_AD_FREE = false; //Flag that determines whether or not to show ads. This will be true in ad-free version and false in the ad-enabled version
+    public final boolean IS_AD_TESTING = true; // TODO Flag that determines whether to show test ads or live ads
     public final String AMAZON_APP_ID = ""; //Need this for the ad impressions to be credited to me
     public final String ADMOB_BANNER_AD_ID = ""; //Need this to get credit for admob banner impressions
     public final String TEST_KINDLE_DEVICE_ID = ""; //This is just for testing with my tablet with admob
@@ -198,18 +209,18 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                 .addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
 
         // TODO Make sure the ad testing is set to false before submitting the app!
-        if (IS_AD_TESTING && !IS_AD_FREE) {
+        if (IS_AD_TESTING) {
             AdRegistration.enableTesting(true);
             //AdRegistration.enableLogging(true);
         }
 
-        //Setup the app differently depending on if it's the ad-free version or not
-        if (IS_AD_FREE)
-            hideAds();
-        else {
-            initAds();
-            showAds();
-        }
+
+        initAds();
+        showAds();
+
+        scanPointIcon = BitmapDescriptorFactory.fromResource(R.drawable.scan_point_icon);
+
+
     }
 
     @Override
@@ -230,21 +241,23 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     protected void onResume() {
         super.onResume();
 
-        //turn the banners back on to refreshing if this is the ad version
-        if (!IS_AD_FREE) {
-            resumeAds();
-            //timerManager.resumeTimers();
-        }
+
+        resumeAds();
+        //timerManager.resumeTimers();
+
 
         Log.d(TAG, "PokeFinderActivity.onResume()");
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         scanDistance = preferences.getInt(PREF_SCAN_DISTANCE, DEFAULT_SCAN_DISTANCE);
         scanTime = preferences.getInt(PREF_SCAN_TIME, DEFAULT_SCAN_TIME);
+        if (scanDistance > 180) scanDistance = 180;
 
         LocationManager manager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
             longMessage(R.string.noLocationDetected);
         }
+
+        startCountdownTimer();
     }
 
     @Override
@@ -258,12 +271,55 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "PokeFinderActivity.onPause()");
-        if (!IS_AD_FREE) {
-            // Make sure the timers are paused (the tasks are successfully cancelled)
-            timersPaused = true;
-            pauseAds();
-            timersPaused = timerManager.pauseTimers();
-        }
+        // Make sure the timers are paused (the tasks are successfully cancelled)
+        timersPaused = true;
+        pauseAds();
+        timersPaused = timerManager.pauseTimers();
+
+        stopCountdownTimer();
+    }
+
+    public void startCountdownTimer() {
+        if (countdownTimer != null) countdownTimer.cancel();
+        countdownTimer = new Timer();
+
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Runnable r = new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayList<Long> removables = new ArrayList<Long>();
+                        for (WildPokemonTime poke : pokeTimes.values()) {
+                            long timeLeftMs = poke.getDespawnTimeMs() - System.currentTimeMillis();
+                            if (timeLeftMs < 0) {
+                                pokeMarkers.remove(poke.getPoke().getEncounterId()).remove();
+                                removables.add(poke.getPoke().getEncounterId());
+                            } else {
+                                Marker marker = pokeMarkers.get(poke.getPoke().getEncounterId());
+                                marker.setSnippet("Leaves in " + getTimeString(timeLeftMs / 1000 + 1));
+                                if (marker.isInfoWindowShown()) marker.showInfoWindow();
+                            }
+                        }
+                        for (Long id : removables) {
+                            pokeTimes.remove(id);
+                        }
+                    }
+                };
+                runOnUiThread(r);
+            }
+        };
+
+        countdownTimer.schedule(task, 0, 1000);
+    }
+
+    public void stopCountdownTimer() {
+        if (countdownTimer != null) countdownTimer.cancel();
+    }
+
+    public String getTimeString(long time) {
+        String timeString = (time / 60) + ":" + String.format("%02d", time % 60);
+        return timeString;
     }
 
     public void startInterstitialTimer() {
@@ -294,7 +350,8 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
         primaryInterstitial.setListener(new AdListener() {
 
             @Override
-            public void onAdCollapsed(Ad ad) { }
+            public void onAdCollapsed(Ad ad) {
+            }
 
             @Override
             public void onAdDismissed(Ad ad) {
@@ -302,7 +359,8 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
             }
 
             @Override
-            public void onAdExpanded(Ad ad) { }
+            public void onAdExpanded(Ad ad) {
+            }
 
             @Override
             public void onAdFailedToLoad(Ad ad, AdError error) {
@@ -436,7 +494,8 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                         // If the app tried to cancel the timers but it failed, timersPaused will be false and this
                         // will prevent an infinite cycle of ad-loading in the background. If the timers are successfully
                         // paused, this task will be cancelled so it will never reach this line.
-                        if (isActivityVisible) loadNextBanner(null); // Try Amazon before anything else. They have the best CPM
+                        if (isActivityVisible)
+                            loadNextBanner(null); // Try Amazon before anything else. They have the best CPM
                     }
                 });
             }
@@ -470,24 +529,22 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (newConfig.orientation != lastOrientation) {
-            if (!IS_AD_FREE) {
-                hideAdmobBanner();
-                hideAmazonBanner();
-                Timer timer = new Timer();
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        Runnable r = new Runnable() {
-                            @Override
-                            public void run() {
-                                loadNextBanner(null);
-                            }
-                        };
-                        runOnUiThread(r);
-                    }
-                };
-                timer.schedule(task, 2000);
-            }
+            hideAdmobBanner();
+            hideAmazonBanner();
+            Timer timer = new Timer();
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    Runnable r = new Runnable() {
+                        @Override
+                        public void run() {
+                            loadNextBanner(null);
+                        }
+                    };
+                    runOnUiThread(r);
+                }
+            };
+            timer.schedule(task, 2000);
         }
         lastOrientation = newConfig.orientation;
     }
@@ -528,7 +585,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
         isPrimaryAdVisible = true;
         hideAdmobBanner();
         // Can use this to get a mix of Amazon and admob ads. Good for testing.
-		/*if (new Random().nextBoolean()) {
+        /*if (new Random().nextBoolean()) {
 			loadAdmobBanner();
 			return;
 		}*/
@@ -549,13 +606,16 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
         banner.setListener(new AdListener() {
 
             @Override
-            public void onAdCollapsed(Ad ad) {	}
+            public void onAdCollapsed(Ad ad) {
+            }
 
             @Override
-            public void onAdDismissed(Ad ad) {	}
+            public void onAdDismissed(Ad ad) {
+            }
 
             @Override
-            public void onAdExpanded(Ad ad) {  }
+            public void onAdExpanded(Ad ad) {
+            }
 
             @Override
             public void onAdFailedToLoad(Ad ad, AdError error) {
@@ -670,7 +730,8 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                 return true;
 
             case R.id.action_logout:
-                logout();
+                if (IS_AD_TESTING) mMap.clear();
+                else logout();
                 return true;
 
             /*case R.id.action_help:
@@ -724,13 +785,12 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        if (!IS_AD_FREE) {
-            DisplayMetrics metrics = this.getResources().getDisplayMetrics();
-            float screenWidth = metrics.widthPixels / metrics.density;
-            float screenHeight = metrics.heightPixels / metrics.density;
-            int googleLogoPadding = Math.round(90 * metrics.density) + 2;
-            mMap.setPadding(5, 5, 5, googleLogoPadding);
-        }
+        DisplayMetrics metrics = this.getResources().getDisplayMetrics();
+        int googleLogoPadding = Math.round(90 * metrics.density) + 2;
+        paddingLeft = paddingTop = paddingRight = 5;
+        paddingBottom = googleLogoPadding;
+        mMap.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
+
 
         try {
             mMap.setMyLocationEnabled(true);
@@ -742,7 +802,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
             @Override
             public void onMapLongClick(LatLng latLng) {
                 locationOverride = true;
-                moveMe(latLng.latitude, latLng.longitude, true);
+                moveMe(latLng.latitude, latLng.longitude, true, false);
             }
         });
 
@@ -757,16 +817,20 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
 
         mMap.animateCamera(CameraUpdateFactory.zoomTo(DEFAULT_ZOOM));
 
+        //moveMe(TEST_LAT, TEST_LON);
         //moveMe(FAIRPARK_LAT, FAIRPARK_LON);
         //test();
     }
 
-    public synchronized void moveMe(double lat, double lon, boolean repositionCamera) {
+    public synchronized void moveMe(double lat, double lon, boolean repositionCamera, boolean reZoom) {
         // Add a marker in Sydney and move the camera
         LatLng me = new LatLng(lat, lon);
         if (myMarker != null) myMarker.remove();
         myMarker = mMap.addMarker(new MarkerOptions().position(me).title("Me"));
-        if (repositionCamera) mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(me, DEFAULT_ZOOM));
+        if (repositionCamera) {
+            if (reZoom) mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(me, DEFAULT_ZOOM));
+            else mMap.animateCamera(CameraUpdateFactory.newLatLng(me));
+        }
         currentLat = lat;
         currentLon = lon;
     }
@@ -793,7 +857,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                 try {
                     final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(act);
                     token = preferences.getString(PREF_TOKEN, "");
-                    if (token != "") {
+                    /*if (token != "") {
                         final ProgressDialog tryingDialog = showProgressDialog(R.string.tryingLoginTitle, R.string.tryingLoginMessage);
                         boolean trying = true;
                         int failCount = 0;
@@ -803,8 +867,6 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                                 Log.d(TAG, "Attempting to login with token: " + token);
 
                                 OkHttpClient httpClient = new OkHttpClient();
-                                RequestEnvelopeOuterClass.RequestEnvelope.AuthInfo auth = null;
-                                auth = new PTCLogin(httpClient).login(token);
                                 go = new PokemonGo(auth, httpClient);
                                 tryTalkingToServer(); // This will error if we can't reach the server
                                 shortMessage(R.string.loginSuccessfulMessage);
@@ -833,156 +895,155 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                                 }
                             }
                         }
-                    } else {
-                        Runnable runnable = new Runnable() {
-                            @Override
-                            public void run() {
-                                String pastUsername = preferences.getString(PREF_USERNAME, "");
-                                String pastPassword = preferences.getString(PREF_PASSWORD, "");
+                    } else {*/
+                    Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            String pastUsername = preferences.getString(PREF_USERNAME, "");
+                            String pastPassword = preferences.getString(PREF_PASSWORD, "");
 
-                                if (!pastUsername.equals("") && !pastPassword.equals("")) {
-                                    final String username = decode(pastUsername);
-                                    final String password = decode(pastPassword);
+                            if (!pastUsername.equals("") && !pastPassword.equals("")) {
+                                final String username = decode(pastUsername);
+                                final String password = decode(pastPassword);
 
-                                    if (username.equals("") || password.equals("")) {
-                                        // Erase username and pass and prompt for login again
-                                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(act);
-                                        SharedPreferences.Editor editor = preferences.edit();
-                                        editor.putString(PREF_USERNAME, "");
-                                        editor.putString(PREF_PASSWORD, "");
-                                        editor.commit();
-                                        unlockLogin();
-                                        login();
-                                        return;
-                                    }
+                                if (username.equals("") || password.equals("")) {
+                                    // Erase username and pass and prompt for login again
+                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(act);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putString(PREF_USERNAME, "");
+                                    editor.putString(PREF_PASSWORD, "");
+                                    editor.commit();
+                                    unlockLogin();
+                                    login();
+                                    return;
+                                }
 
-                                    Thread thread = new Thread() {
-                                        @Override
-                                        public void run() {
-                                            final ProgressDialog tryingDialog = showProgressDialog(R.string.tryingLoginTitle, R.string.tryingLoginMessage);
-                                            boolean trying = true;
-                                            int failCount = 0;
-                                            final int MAX_TRIES = 10;
-                                            while (trying) {
-                                                OkHttpClient httpClient = new OkHttpClient();
-                                                RequestEnvelopeOuterClass.RequestEnvelope.AuthInfo auth = null;
-                                                try {
-                                                    Log.d(TAG, "Attempting to login with Username: " + username + " and password: " + password);
+                                Thread thread = new Thread() {
+                                    @Override
+                                    public void run() {
+                                        final ProgressDialog tryingDialog = showProgressDialog(R.string.tryingLoginTitle, R.string.tryingLoginMessage);
+                                        boolean trying = true;
+                                        int failCount = 0;
+                                        final int MAX_TRIES = 10;
+                                        while (trying) {
+                                            OkHttpClient httpClient = new OkHttpClient();
+                                            //RequestEnvelopeOuterClass.RequestEnvelope.AuthInfo auth = null;
+                                            try {
+                                                Log.d(TAG, "Attempting to login with Username: " + username + " and password: " + password);
 
-                                                    auth = new PTCLogin(httpClient).login(username, password);
-                                                    go = new PokemonGo(auth, httpClient);
-                                                    shortMessage(R.string.loginSuccessfulMessage);
-                                                    token = auth.getToken().getContents();
-                                                    Log.d(TAG, "Token: " + token);
-                                                    SharedPreferences.Editor editor = preferences.edit();
-                                                    editor.putString(PREF_TOKEN, token);
-                                                    editor.commit();
+                                                PtcCredentialProvider provider = new PtcCredentialProvider(httpClient, username, password);
+                                                go = new PokemonGo(provider, httpClient);
+                                                shortMessage(R.string.loginSuccessfulMessage);
+                                                token = provider.getTokenId();
+                                                Log.d(TAG, "Token: " + token);
+                                                SharedPreferences.Editor editor = preferences.edit();
+                                                editor.putString(PREF_TOKEN, token);
+                                                editor.commit();
+                                                unlockLogin();
+                                                progressDialog.dismiss();
+                                                return;
+                                            } catch (Exception e) {
+                                                if (++failCount < MAX_TRIES) {
+                                                    try {
+                                                        Thread.sleep(3000);
+                                                    } catch (InterruptedException e1) {
+                                                        e1.printStackTrace();
+                                                    }
+                                                } else {
+                                                    e.printStackTrace();
+                                                    longMessage(R.string.loginFailedMessage);
                                                     unlockLogin();
                                                     progressDialog.dismiss();
                                                     return;
-                                                } catch (LoginFailedException e) {
-                                                    if (++failCount < MAX_TRIES) {
-                                                        try {
-                                                            Thread.sleep(3000);
-                                                        } catch (InterruptedException e1) {
-                                                            e1.printStackTrace();
-                                                        }
-                                                    } else {
-                                                        e.printStackTrace();
-                                                        longMessage(R.string.loginFailedMessage);
-                                                        unlockLogin();
-                                                        progressDialog.dismiss();
-                                                        return;
-                                                    }
                                                 }
                                             }
                                         }
-                                    };
-                                    thread.start();
-                                } else {
+                                    }
+                                };
+                                thread.start();
+                            } else {
 
-                                    // Show login screen
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(act);
-                                    builder.setTitle(R.string.loginTitle);
-                                    builder.setMessage(R.string.loginMessage);
-                                    View view = getLayoutInflater().inflate(R.layout.login, null);
-                                    builder.setView(view);
+                                // Show login screen
+                                AlertDialog.Builder builder = new AlertDialog.Builder(act);
+                                builder.setTitle(R.string.loginTitle);
+                                builder.setMessage(R.string.loginMessage);
+                                View view = getLayoutInflater().inflate(R.layout.login, null);
+                                builder.setView(view);
 
-                                    final EditText username = (EditText) view.findViewById(R.id.username);
-                                    final EditText password = (EditText) view.findViewById(R.id.password);
-                                    final CheckBox rememberLogin = (CheckBox) view.findViewById(R.id.rememberLogin);
-                                    final TextView createAccount = (TextView) view.findViewById(R.id.createAccountLink);
-                                    createAccount.setText(getResources().getText(R.string.createAccountMessage));
-                                    createAccount.setMovementMethod(LinkMovementMethod.getInstance());
+                                final EditText username = (EditText) view.findViewById(R.id.username);
+                                final EditText password = (EditText) view.findViewById(R.id.password);
+                                final CheckBox rememberLogin = (CheckBox) view.findViewById(R.id.rememberLogin);
+                                final TextView createAccount = (TextView) view.findViewById(R.id.createAccountLink);
+                                createAccount.setText(getResources().getText(R.string.createAccountMessage));
+                                createAccount.setMovementMethod(LinkMovementMethod.getInstance());
 
-                                    builder.setPositiveButton(R.string.loginButton, new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            Thread thread = new Thread() {
-                                                @Override
-                                                public void run() {
-                                                    if (rememberLogin.isChecked()) {
-                                                        // Boss gave us permission to store the credentials
-                                                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(act);
+                                builder.setPositiveButton(R.string.loginButton, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        Thread thread = new Thread() {
+                                            @Override
+                                            public void run() {
+                                                if (rememberLogin.isChecked()) {
+                                                    // Boss gave us permission to store the credentials
+                                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(act);
+                                                    SharedPreferences.Editor editor = preferences.edit();
+                                                    editor.putString(PREF_USERNAME, encode(username.getText().toString()));
+                                                    editor.putString(PREF_PASSWORD, encode(password.getText().toString()));
+                                                    editor.commit();
+                                                }
+                                                final ProgressDialog tryingDialog = showProgressDialog(R.string.tryingLoginTitle, R.string.tryingLoginMessage);
+                                                boolean trying = true;
+                                                int failCount = 0;
+                                                final int MAX_TRIES = 10;
+                                                while (trying) {
+                                                    OkHttpClient httpClient = new OkHttpClient();
+                                                    try {
+                                                        Log.d(TAG, "Attempting to login with Username: " + username.getText().toString() + " and password: " + password.getText().toString());
+
+                                                        PtcCredentialProvider provider = new PtcCredentialProvider(httpClient, username.getText().toString(), password.getText().toString());
+                                                        go = new PokemonGo(provider, httpClient);
+                                                        shortMessage(R.string.loginSuccessfulMessage);
+                                                        token = provider.getTokenId();
+                                                        Log.d(TAG, "Token: " + token);
                                                         SharedPreferences.Editor editor = preferences.edit();
-                                                        editor.putString(PREF_USERNAME, encode(username.getText().toString()));
-                                                        editor.putString(PREF_PASSWORD, encode(password.getText().toString()));
+                                                        editor.putString(PREF_TOKEN, token);
                                                         editor.commit();
-                                                    }
-                                                    final ProgressDialog tryingDialog = showProgressDialog(R.string.tryingLoginTitle, R.string.tryingLoginMessage);
-                                                    boolean trying = true;
-                                                    int failCount = 0;
-                                                    final int MAX_TRIES = 10;
-                                                    while (trying) {
-                                                        OkHttpClient httpClient = new OkHttpClient();
-                                                        RequestEnvelopeOuterClass.RequestEnvelope.AuthInfo auth = null;
-                                                        try {
-                                                            Log.d(TAG, "Attempting to login with Username: " + username.getText().toString() + " and password: " + password.getText().toString());
-
-                                                            auth = new PTCLogin(httpClient).login(username.getText().toString(), password.getText().toString());
-                                                            go = new PokemonGo(auth, httpClient);
-                                                            shortMessage(R.string.loginSuccessfulMessage);
-                                                            token = auth.getToken().getContents();
-                                                            Log.d(TAG, "Token: " + token);
-                                                            SharedPreferences.Editor editor = preferences.edit();
-                                                            editor.putString(PREF_TOKEN, token);
-                                                            editor.commit();
+                                                        unlockLogin();
+                                                        progressDialog.dismiss();
+                                                        return;
+                                                    } catch (Exception e) {
+                                                        if (++failCount < MAX_TRIES) {
+                                                            try {
+                                                                Thread.sleep(3000);
+                                                            } catch (InterruptedException e1) {
+                                                                e1.printStackTrace();
+                                                            }
+                                                        } else {
+                                                            e.printStackTrace();
+                                                            longMessage(R.string.loginFailedMessage);
                                                             unlockLogin();
                                                             progressDialog.dismiss();
                                                             return;
-                                                        } catch (LoginFailedException e) {
-                                                            if (++failCount < MAX_TRIES) {
-                                                                try {
-                                                                    Thread.sleep(3000);
-                                                                } catch (InterruptedException e1) {
-                                                                    e1.printStackTrace();
-                                                                }
-                                                            } else {
-                                                                e.printStackTrace();
-                                                                longMessage(R.string.loginFailedMessage);
-                                                                unlockLogin();
-                                                                progressDialog.dismiss();
-                                                                return;
-                                                            }
                                                         }
                                                     }
                                                 }
-                                            };
-                                            thread.start();
-                                        }
-                                    });
-                                    builder.setNegativeButton(R.string.cancelButton, new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            unlockLogin();
-                                        }
-                                    });
+                                            }
+                                        };
+                                        thread.start();
+                                    }
+                                });
+                                builder.setNegativeButton(R.string.cancelButton, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        unlockLogin();
+                                    }
+                                });
 
-                                    builder.create().show();
-                                }
+                                builder.create().show();
                             }
-                        };
-                        runOnUiThread(runnable);
+                        }
+                    };
+                    runOnUiThread(runnable);
 
-                    }
+
                 } catch (Exception e) {
                     Log.d(TAG, "Login failed...");
                     e.printStackTrace();
@@ -1008,8 +1069,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                 login();
                 return false;
             }
-        }
-        else {
+        } else {
             login();
             return false;
         }
@@ -1037,7 +1097,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
 
             Log.d(TAG, "Decoded \"" + value + "\" as \"" + result + "\"");
             return result;
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return "";
         }
@@ -1266,9 +1326,9 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                     Uri.parse("twitter://user?screen_name=LogickLLC"));
             startActivity(intent);
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             startActivity(new Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://twitter.com/#!/LogickLLC")));
+                    Uri.parse("https://twitter.com/LogickLLC")));
         }
     }
 
@@ -1295,7 +1355,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
                 Log.d(TAG, "Place: " + place.getName());
                 LatLng coords = place.getLatLng();
                 locationOverride = true;
-                moveMe(coords.latitude, coords.longitude, true);
+                moveMe(coords.latitude, coords.longitude, true, true);
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 Status status = PlaceAutocomplete.getStatus(this, data);
                 Log.e(TAG, status.getStatusMessage());
@@ -1310,197 +1370,244 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
         if (!loggedIn()) return;
         searched = true;
         abortScan = false;
+        if (scanDistance > 180) scanDistance = 180;
         final Context con = this;
-        final ArrayList<Marker> tempMarkers = new ArrayList<Marker>(pokeMarkers);
+        final LinearLayout scanLayout = (LinearLayout) findViewById(R.id.scanLayout);
+        final ProgressBar scanBar = (ProgressBar) findViewById(R.id.scanBar);
+        final TextView scanText = (TextView) findViewById(R.id.scanText);
 
-        final Thread scanThread = new Thread() {
+        Runnable main = new Runnable() {
+            @Override
             public void run() {
-                Runnable progressRunnable = new Runnable() {
-                    @Override
+                final ArrayList<Long> ids = new ArrayList<Long>(noTimes);
+
+                for (Long id : ids) {
+                    Log.d(TAG, "Removed poke marker!");
+                    Marker marker = pokeMarkers.remove(id);
+                    marker.remove();
+                }
+
+                scanBar.setProgress(0);
+                scanBar.setMax(NUM_SCAN_SECTORS);
+                scanText.setText("Scanning for Pokemon (" + NUM_SCAN_SECTORS + " sectors at " + scanDistance + "m radius)");
+
+                scanLayout.setVisibility(View.VISIBLE);
+                scanBar.setVisibility(View.VISIBLE);
+                scanLayout.requestLayout();
+                scanLayout.bringToFront();
+                scanLayout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+
+
+                DisplayMetrics metrics = getResources().getDisplayMetrics();
+                paddingTop = Math.round(scanLayout.getMeasuredHeight() * metrics.density) + 2;
+                Log.d(TAG, "Padding top: " + paddingTop);
+                mMap.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
+
+                noTimes.clear();
+
+                final Thread scanThread = new Thread() {
                     public void run() {
-                        for (Marker marker : tempMarkers) {
-                            Log.d(TAG, "Removed poke marker!");
-                            marker.remove();
-                        }
-                        dialog = new ProgressDialog(con);
-                        dialog.setTitle("Scanning for Pokemon (" + NUM_SCAN_SECTORS + " sectors at " + scanDistance + "m radius)");
-                        scanDialogMessage = "Scanning sector 1 of " + NUM_SCAN_SECTORS;
-                        //dialog.setMessage(scanDialogMessage);
-                        dialog.setMax(NUM_SCAN_SECTORS);
-                        dialog.setProgress(0);
-                        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                        //dialog.setIndeterminate(true);
-                        dialog.setCancelable(true);
-                        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                            @Override
-                            public void onCancel(DialogInterface dialog) {
-                                abortScan = true;
-                            }
-                        });
-                        dialog.show();
-                    }
-                };
-                runOnUiThread(progressRunnable);
+                        double lat = currentLat;
+                        double lon = currentLon;
+                        int offsetMeters = scanDistance;
+                        final long METERS_PER_SECOND = 50;
+                        final long SCAN_INTERVAL = Math.round(scanTime * 1000 / (float) (NUM_SCAN_SECTORS - 1));
+                        failedScanLogins = 0;
 
-                // TODO Pull this from GPS later (or Location Services)
-                double lat = currentLat;
-                double lon = currentLon;
-                int offsetMeters = scanDistance;
-                final long METERS_PER_SECOND = 50;
-                final long SCAN_INTERVAL = Math.round(scanTime * 1000 / (float) (NUM_SCAN_SECTORS - 1));
-                failedScanLogins = 0;
-
-                Runnable circleRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (scanCircle != null) scanCircle.remove();
-                        scanCircle = mMap.addCircle(new CircleOptions().center(new LatLng(currentLat, currentLon)).strokeWidth(1).radius(scanDistance + MAX_SCAN_RADIUS).strokeColor(Color.argb(128, 0, 0, 255)));
-                    }
-                };
-                runOnUiThread(circleRunnable);
-
-                Log.d(TAG, "Scan distance: " + scanDistance);
-                Log.d(TAG, "Scan interval: " + SCAN_INTERVAL);
-
-                totalNearbyPokemon.clear();
-                totalEncounters.clear();
-                totalWildEncounters.clear();
-                pokeMarkers.clear();
-
-                //scanForPokemon(lat, lon);
-
-                // Calculate bounding box of this point at certain intervals and poll them
-                // all for a complete mapping. Pause a few seconds between polling to not agitate the servers
-
-                int negOffsetMeters = -1 * offsetMeters;
-                LatLng[] boundingBox = getBoundingBox(lat, lon, offsetMeters);
-                ArrayList<LatLng> boxList = new ArrayList<LatLng>(Arrays.asList(boundingBox));
-                Vector2D[] boxPoints = new Vector2D[]{Vector2D.ZERO,
-                        new Vector2D(negOffsetMeters, negOffsetMeters),
-                        new Vector2D(negOffsetMeters, 0),
-                        new Vector2D(negOffsetMeters, offsetMeters),
-                        new Vector2D(0, offsetMeters),
-                        new Vector2D(offsetMeters, offsetMeters),
-                        new Vector2D(offsetMeters, 0),
-                        new Vector2D(offsetMeters, negOffsetMeters),
-                        new Vector2D(0, negOffsetMeters)};
-
-                int failedSectors = 0;
-
-                boolean first = true;
-                for (int n = 0; n < boundingBox.length; n++) {
-                    if (abortScan) {
-                        longMessage(R.string.abortScan);
-                        return;
-                    }
-                    try {
-                        if (!first) Thread.sleep(Math.max(SCAN_INTERVAL, 500));
-                        else first = false;
-
-                        final int sector = n + 1;
-                        progressRunnable = new Runnable() {
+                        Runnable circleRunnable = new Runnable() {
                             @Override
                             public void run() {
-                                scanDialogMessage = "Scanning sector " + sector + " of " + NUM_SCAN_SECTORS;
-                                //dialog.setMessage(scanDialogMessage);
-                                dialog.setProgress(sector);
+                                if (scanCircle != null) scanCircle.remove();
+                                scanCircle = mMap.addCircle(new CircleOptions().center(new LatLng(currentLat, currentLon)).strokeWidth(1).radius(0.85f * (scanDistance + MAX_SCAN_RADIUS)).strokeColor(Color.argb(128, 0, 0, 255)));
                             }
                         };
-                        runOnUiThread(progressRunnable);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    LatLng loc = boundingBox[n];
-                    if (!scanForPokemon(loc.latitude, loc.longitude)) failedSectors++;
-                }
+                        runOnUiThread(circleRunnable);
 
-                try {
-                    // Trilaterate everything we don't have on the map yet
-                    for (long encounter : totalEncounters) {
-                        if (totalWildEncounters.contains(encounter)) continue;
-                        String name = "Unknown";
-                        ArrayList<NearbyPokemonGPS> triPoints = new ArrayList<NearbyPokemonGPS>();
-                        float minDistance = Float.POSITIVE_INFINITY;
-                        for (NearbyPokemonGPS poke : totalNearbyPokemon) {
-                            if (poke.getPokemon().getEncounterId() == encounter) {
-                                minDistance = Math.min(minDistance, poke.getPokemon().getDistanceInMeters());
-                                name = poke.getPokemon().getPokemonId().name();
-                                if (poke.getPokemon().getDistanceInMeters() == 200) continue;
-                                int index = boxList.indexOf(poke.getCoords());
-                                poke.setCartesianCoords(boxPoints[index]);
-                                triPoints.add(poke);
+                        Log.d(TAG, "Scan distance: " + scanDistance);
+                        Log.d(TAG, "Scan interval: " + SCAN_INTERVAL);
+
+                        totalNearbyPokemon.clear();
+                        totalEncounters.clear();
+                        totalWildEncounters.clear();
+                        //pokeMarkers.clear();
+
+                        //scanForPokemon(lat, lon);
+
+                        // Calculate bounding box of this point at certain intervals and poll them
+                        // all for a complete mapping. Pause a few seconds between polling to not agitate the servers
+
+                        int negOffsetMeters = -1 * offsetMeters;
+                        float offsetDiagonal = (float) Math.sin(Math.toRadians(45));
+                        float negOffsetDiagonal = -1 * offsetDiagonal;
+                        LatLng[] boundingBox = getBoundingBox(lat, lon, offsetMeters);
+                        ArrayList<LatLng> boxList = new ArrayList<LatLng>(Arrays.asList(boundingBox));
+                        Vector2D[] boxPoints = new Vector2D[]{Vector2D.ZERO,
+                                new Vector2D(negOffsetDiagonal, negOffsetDiagonal),
+                                new Vector2D(negOffsetMeters, 0),
+                                new Vector2D(negOffsetDiagonal, offsetDiagonal),
+                                new Vector2D(0, offsetMeters),
+                                new Vector2D(offsetDiagonal, offsetDiagonal),
+                                new Vector2D(offsetMeters, 0),
+                                new Vector2D(offsetDiagonal, negOffsetDiagonal),
+                                new Vector2D(0, negOffsetMeters)};
+
+                        int failedSectors = 0;
+
+                        boolean first = true;
+                        for (int n = 0; n < boundingBox.length; n++) {
+                            // TODO Any changes to this should be reflected in the below identical abort block
+                            if (abortScan) {
+                                longMessage(R.string.abortScan);
+                                return;
                             }
+                            final LatLng loc = boundingBox[n];
+                            try {
+                                if (!first) Thread.sleep(Math.max(SCAN_INTERVAL, 500));
+                                else first = false;
+
+                                if (abortScan) {
+                                    longMessage(R.string.abortScan);
+                                    return;
+                                }
+
+                                final int sector = n + 1;
+                                Runnable progressRunnable = new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        scanDialogMessage = "Scanning for Pokemon (" + NUM_SCAN_SECTORS + " sectors at " + scanDistance + "m radius)";
+                                        //dialog.setMessage(scanDialogMessage);
+                                        //dialog.setProgress(sector);
+                                        scanText.setText(scanDialogMessage);
+                                        scanBar.setProgress(sector);
+                                        if (scanPoint != null) scanPoint.remove();
+                                        if (scanPointCircle != null) scanPointCircle.remove();
+                                        scanPointCircle = mMap.addCircle(new CircleOptions().radius(MAX_SCAN_RADIUS).strokeWidth(2).center(loc).zIndex(-1));
+                                        scanPoint = mMap.addMarker(new MarkerOptions().position(loc).title("Sector " + sector).icon(scanPointIcon).anchor(0.32f, 0.32f).zIndex(10000f));
+                                    }
+                                };
+                                runOnUiThread(progressRunnable);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                if (abortScan) {
+                                    longMessage(R.string.abortScan);
+                                    return;
+                                }
+                            }
+                            if (!scanForPokemon(loc.latitude, loc.longitude)) failedSectors++;
                         }
-                        if (triPoints.size() >= 3) {
-                            // TODO We can trilaterate with these points and distances
-                            // Center location is (0,0)
-                            int size = triPoints.size();
-                            double[][] positions = new double[size][2];
-                            double[] distances = new double[size];
 
-                            for (int n = 0; n < size; n++) {
-                                positions[n][0] = triPoints.get(n).getCartesianCoords().getX();
-                                positions[n][1] = triPoints.get(n).getCartesianCoords().getY();
-                                distances[n] = triPoints.get(n).getPokemon().getDistanceInMeters();
+                        try {
+                            // Trilaterate everything we don't have on the map yet
+                            for (long encounter : totalEncounters) {
+                                if (totalWildEncounters.contains(encounter)) continue;
+                                String name = "Unknown";
+                                ArrayList<NearbyPokemonGPS> triPoints = new ArrayList<NearbyPokemonGPS>();
+                                float minDistance = Float.POSITIVE_INFINITY;
+                                for (NearbyPokemonGPS poke : totalNearbyPokemon) {
+                                    if (poke.getPokemon().getEncounterId() == encounter) {
+                                        minDistance = Math.min(minDistance, poke.getPokemon().getDistanceInMeters());
+                                        name = poke.getPokemon().getPokemonId().name();
+                                        if (poke.getPokemon().getDistanceInMeters() == 200)
+                                            continue;
+                                        int index = boxList.indexOf(poke.getCoords());
+                                        poke.setCartesianCoords(boxPoints[index]);
+                                        triPoints.add(poke);
+                                    }
+                                }
+                                if (triPoints.size() >= 3) {
+                                    // TODO We can trilaterate with these points and distances
+                                    // Center location is (0,0)
+                                    int size = triPoints.size();
+                                    double[][] positions = new double[size][2];
+                                    double[] distances = new double[size];
+
+                                    for (int n = 0; n < size; n++) {
+                                        positions[n][0] = triPoints.get(n).getCartesianCoords().getX();
+                                        positions[n][1] = triPoints.get(n).getCartesianCoords().getY();
+                                        distances[n] = triPoints.get(n).getPokemon().getDistanceInMeters();
+                                    }
+
+                                    NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
+                                    LeastSquaresOptimizer.Optimum optimum = solver.solve();
+
+                                    double[] centroid = optimum.getPoint().toArray();
+                                    double offsetX = centroid[1];
+                                    double offsetY = centroid[0];
+
+                                    // TODO Convert to Lat/Lon somehow
+                                    final double latRadian = Math.toRadians(lat);
+
+                                    final double metersPerLatDegree = 110574.235;
+                                    final double metersPerLonDegree = 110572.833 * Math.cos(latRadian);
+                                    final LatLng target = new LatLng(offsetY / metersPerLatDegree + lat, offsetX / metersPerLonDegree + lon);
+                                    final String finalName = name;
+
+                                    Runnable markerRunnable = new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Log.d(TAG, "Adding marker for " + finalName + " at " + target.toString());
+                                            showPokemonAt(finalName, target, System.currentTimeMillis(), false);
+                                        }
+                                    };
+                                    runOnUiThread(markerRunnable);
+                                } else {
+                                    final String finalName = name;
+                                    final float finalMinDistance = minDistance;
+                                    Runnable r = new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(con, finalName + " is " + finalMinDistance + "m away but can't be pinpointed", Toast.LENGTH_SHORT).show();
+                                        }
+                                    };
+                                    //runOnUiThread(r);
+                                }
                             }
 
-                            NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
-                            LeastSquaresOptimizer.Optimum optimum = solver.solve();
-
-                            double[] centroid = optimum.getPoint().toArray();
-                            double offsetX = centroid[1];
-                            double offsetY = centroid[0];
-
-                            // TODO Convert to Lat/Lon somehow
-                            final double latRadian = Math.toRadians(lat);
-
-                            final double metersPerLatDegree = 110574.235;
-                            final double metersPerLonDegree = 110572.833 * Math.cos(latRadian);
-                            final LatLng target = new LatLng(offsetY / metersPerLatDegree + lat, offsetX / metersPerLonDegree + lon);
-                            final String finalName = name;
-
-                            Runnable markerRunnable = new Runnable() {
+                            Runnable dismissRunnable = new Runnable() {
                                 @Override
                                 public void run() {
-                                    Log.d(TAG, "Adding marker for " + finalName + " at " + target.toString());
-                                    showPokemonAt(finalName, target);
+                                    //dialog.dismiss();
+                                    if (scanPoint != null) scanPoint.remove();
+                                    if (scanPointCircle != null) scanPointCircle.remove();
+
+                                    scanLayout.setVisibility(View.GONE);
+                                    paddingTop = 5;
+                                    mMap.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
                                 }
                             };
-                            runOnUiThread(markerRunnable);
-                        } else {
-                            final String finalName = name;
-                            final float finalMinDistance = minDistance;
-                            Runnable r = new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(con, finalName + " is " + finalMinDistance + "m away but can't be pinpointed", Toast.LENGTH_SHORT).show();
-                                }
-                            };
-                            runOnUiThread(r);
+                            runOnUiThread(dismissRunnable);
+
+                            if (failedSectors > 0) {
+                                if (failedScanLogins == NUM_SCAN_SECTORS) login();
+                                else
+                                    shortMessage(failedSectors + " out of " + boundingBox.length + " sectors failed to scan");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            longMessage("Trilateration error. Please inform the developer.");
                         }
                     }
+                };
 
-                    Runnable dismissRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            dialog.dismiss();
-                        }
-                    };
-                    runOnUiThread(dismissRunnable);
+                scanLayout.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        scanThread.interrupt();
+                        abortScan = true;
+                        scanLayout.setVisibility(View.GONE);
+                        paddingTop = 5;
+                        mMap.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
 
-                    if (failedSectors > 0) {
-                        if (failedScanLogins == NUM_SCAN_SECTORS) login();
-                        else
-                            shortMessage(failedSectors + " out of " + boundingBox.length + " sectors failed to scan");
+                        if (scanPoint != null) scanPoint.remove();
+                        if (scanPointCircle != null) scanPointCircle.remove();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    longMessage("Trilateration error. Please inform the developer.");
-                }
+                });
+
+                scanThread.start();
             }
         };
 
-        scanThread.start();
+        runOnUiThread(main);
     }
 
     private LatLng[] getBoundingBox(final double lat, final double lon, final int distanceInMeters) {
@@ -1519,14 +1626,22 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
         final double maxLat = lat + deltaLat;
         final double maxLong = lon + deltaLong;
 
+        final double deltaLatDiagonal = Math.sin(Math.toRadians(45)) * deltaLat;
+        final double deltaLongDiagonal = Math.cos(Math.toRadians(45)) * deltaLong;
+
+        final double minDiagonalLat = lat - deltaLatDiagonal;
+        final double minDiagonalLong = lon - deltaLongDiagonal;
+        final double maxDiagonalLat = lat + deltaLatDiagonal;
+        final double maxDiagonalLong = lon + deltaLongDiagonal;
+
         points[0] = new LatLng(lat, lon);
-        points[1] = new LatLng(minLat, minLong);
+        points[1] = new LatLng(minDiagonalLat, minDiagonalLong);
         points[2] = new LatLng(lat, minLong);
-        points[3] = new LatLng(maxLat, minLong);
+        points[3] = new LatLng(maxDiagonalLat, minDiagonalLong);
         points[4] = new LatLng(maxLat, lon);
-        points[5] = new LatLng(maxLat, maxLong);
+        points[5] = new LatLng(maxDiagonalLat, maxDiagonalLong);
         points[6] = new LatLng(lat, maxLong);
-        points[7] = new LatLng(minLat, maxLong);
+        points[7] = new LatLng(minDiagonalLat, maxDiagonalLong);
         points[8] = new LatLng(minLat, lon);
 
         return points;
@@ -1545,27 +1660,65 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
             final List<WildPokemonOuterClass.WildPokemon> wildPokes = getWildPokemon(go, 9);
             for (WildPokemonOuterClass.WildPokemon poke : wildPokes) {
                 totalWildEncounters.add(poke.getEncounterId());
+                if (!pokeTimes.containsKey(poke.getEncounterId()) && !noTimes.contains(poke.getEncounterId())) {
+                    long timeMs = poke.getTimeTillHiddenMs();
+                    if (timeMs > 0) {
+                        long despawnTime = System.currentTimeMillis() + timeMs;
+                        pokeTimes.put(poke.getEncounterId(), new WildPokemonTime(poke, despawnTime));
+                        Log.d(TAG, poke.getPokemonData().getPokemonId() + " will despawn at " + despawnTime);
+                    } else if (timeMs < 0) {
+                        noTimes.add(poke.getEncounterId());
+                    }
+                }
+
             }
 
             Runnable r = new Runnable() {
                 @Override
                 public void run() {
-                    if (pokes.isEmpty()) Log.d("PokeFinder", "No catchable pokes :(");
+                    /*if (pokes.isEmpty()) Log.d("PokeFinder", "No catchable pokes :(");
                     for (CatchablePokemon poke : pokes) {
                         Log.d("PokeFinder", "Found CatchablePokemon: " + poke.toString());
-                        showPokemonAt(poke.getPokemonId().name(), new LatLng(poke.getLatitude(), poke.getLongitude()));
-                    }
+                        // TODO Figure out expiration timestamp
+                        //showPokemonAt(poke.getPokemonId().name(), new LatLng(poke.getLatitude(), poke.getLongitude()), poke.getEncounterId(), true);
+                    }*/
 
                     if (nearbyPokes.isEmpty()) Log.d("PokeFinder", "No nearby pokes :(");
                     for (NearbyPokemonOuterClass.NearbyPokemon poke : nearbyPokes) {
-                        Log.d("PokeFinder", "Found NearbyPokemon: " + poke.toString());
+                        //Log.d("PokeFinder", "Found NearbyPokemon: " + poke.toString());
                         //mMap.addCircle(new CircleOptions().center(new LatLng(go.getLatitude(), go.getLongitude())).radius(poke.getDistanceInMeters()));
                     }
 
                     if (wildPokes.isEmpty()) Log.d("PokeFinder", "No wild pokes :(");
                     for (WildPokemonOuterClass.WildPokemon poke : wildPokes) {
                         Log.d("PokeFinder", "Found WildPokemon: " + poke.toString());
-                        showPokemonAt(poke.getPokemonData().getPokemonId().name(), new LatLng(poke.getLatitude(), poke.getLongitude()));
+                        //Log.d(TAG, "Most recent way of finding time till hidden: " +  (poke.getTimeTillHiddenMs() & 0xffffffffL));
+                        //Log.d(TAG, "BigDecimal: " + asString(poke.getTimeTillHiddenMs()));
+                        //Log.d(TAG, "Integer shift: " + Integer.toString(poke.getTimeTillHiddenMs() >> 16));
+                        //Log.d(TAG, "Long shift: " + Long.toString(poke.getTimeTillHiddenMs() >> 16));
+                        /*String time = asString(poke.getTimeTillHiddenMs());
+
+                        if (time.length() < 6) {
+                            time = String.format("%06d", Long.parseLong(time));
+                        }
+
+                        String ms = time.substring(time.length() - 6);
+                        int sec = Integer.parseInt(ms.substring(0, 3));
+                        Log.d(TAG, "Time til hidden ms: " + asString(poke.getTimeTillHiddenMs()));
+                        if (poke.getTimeTillHiddenMs() < 0) Log.d(TAG, "Time approximation ms: " + (Math.abs(Integer.MIN_VALUE) - Math.abs(poke.getTimeTillHiddenMs())));*/
+                        long time = poke.getTimeTillHiddenMs();
+                        if (time > 0) {
+                            String ms = String.format("%06d", time);
+                            int sec = Integer.parseInt(ms.substring(0, 3));
+                            //Log.d(TAG, "Time string: " + time);
+                            //Log.d(TAG, "Time shifted: " + (Long.parseLong(time) >> 16));
+                            Log.d(TAG, "Time till hidden seconds: " + sec + "s");
+                            //Log.d(TAG, "Data for " + poke.getPokemonData().getPokemonId() + ":\n" + poke.getPokemonData());
+                            showPokemonAt(poke.getPokemonData().getPokemonId().name(), new LatLng(poke.getLatitude(), poke.getLongitude()), poke.getEncounterId(), true);
+                        } else if (time < 0) {
+                            Log.d(TAG, "No valid expiry time given");
+                            showPokemonAt(poke.getPokemonData().getPokemonId().name(), new LatLng(poke.getLatitude(), poke.getLongitude()), poke.getEncounterId(), false);
+                        }
                     }
                 }
             };
@@ -1579,20 +1732,58 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
 
     }
 
-    public synchronized void showPokemonAt(String name, LatLng loc) {
+    // Courtesy of http://stackoverflow.com/questions/18204265/how-to-convert-unsigned-long-to-string-in-java
+    public static String asString(long l) {
+        return l >= 0 ? String.valueOf(l) : toBigInteger(l).toString();
+    }
+
+    // Courtesy of http://stackoverflow.com/questions/18204265/how-to-convert-unsigned-long-to-string-in-java
+    public static BigInteger toBigInteger(long l) {
+        final BigInteger bi = BigInteger.valueOf(l);
+        return l >= 0 ? bi : bi.add(BI_2_64);
+    }
+
+    private static final BigInteger TWO_64 = BigInteger.ONE.shiftLeft(64);
+
+    /*public String asString(long l) {
+        BigInteger b = BigInteger.valueOf(l);
+        if(b.signum() < 0) {
+            b = b.add(TWO_64);
+        }
+        return b.toString();
+    }*/
+
+    public static long getUnsignedInt(long x) {
+        return x & 0x00000000ffffffffL;
+    }
+
+    public synchronized void showPokemonAt(String name, LatLng loc, long encounterid, boolean hasTime) {
+        if (pokeMarkers.containsKey(encounterid)) return;
+
         name = name.replaceAll("\\-", "");
         name = name.replaceAll("\\'", "");
         name = name.replaceAll("\\.", "");
         name = name.replaceAll(" ", "_");
         if (name.equals("CHARMENDER")) name = "CHARMANDER";
         if (name.equals("ALAKHAZAM")) name = "ALAKAZAM";
+        if (name.equals("CLEFARY")) name = "CLEFAIRY";
+        if (name.equals("GEODUGE")) name = "GEODUDE";
+        if (name.equals("SANDLASH")) name = "SANDSLASH";
         try {
             int resourceID = getResources().getIdentifier(name.toLowerCase(), "drawable", getPackageName());
             name = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
             BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(resourceID);
-            pokeMarkers.add(mMap.addMarker(new MarkerOptions().position(loc).title(name).icon(icon)));
+            if (hasTime)
+                pokeMarkers.put(encounterid, mMap.addMarker(new MarkerOptions().position(loc).title(name).icon(icon)));
+            else
+                pokeMarkers.put(encounterid, mMap.addMarker(new MarkerOptions().position(loc).title(name).icon(icon).snippet(getResources().getString(R.string.timeNotGiven))));
         } catch (Exception e) {
             longMessage("Cannot find image for \"" + name + "\". Please alert the developer.");
+            name = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+            if (hasTime)
+                pokeMarkers.put(encounterid, mMap.addMarker(new MarkerOptions().position(loc).title(name)));
+            else
+                pokeMarkers.put(encounterid, mMap.addMarker(new MarkerOptions().position(loc).title(name).snippet(getResources().getString(R.string.timeNotGiven))));
         }
     }
 
@@ -1719,7 +1910,7 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
     public void initLocation() {
         try {
             Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
-            if (loc != null) moveMe(loc.getLatitude(), loc.getLongitude(), true);
+            if (loc != null) moveMe(loc.getLatitude(), loc.getLongitude(), true, true);
             request = LocationRequest.create()
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setInterval(LOCATION_UPDATE_INTERVAL)
@@ -1745,7 +1936,8 @@ public class PokeFinderActivity extends AppCompatActivity implements OnMapReadyC
 
     @Override
     public void onLocationChanged(Location location) {
-        if (locationOverride == false) moveMe(location.getLatitude(), location.getLongitude(), false);
+        if (locationOverride == false)
+            moveMe(location.getLatitude(), location.getLongitude(), false, false);
         if (!searched) wideScan();
     }
 }

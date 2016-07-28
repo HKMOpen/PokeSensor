@@ -5,6 +5,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+    <LinearLayout
+        android:id="@+id/scanLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:background="#ffffffff">
+
+        <TextView
+            android:id="@+id/scanText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scanning..."
+            android:gravity="center"
+            android:padding="10dp"
+            android:paddingBottom="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"/>
+
+        <ProgressBar
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/scanBar"
+            android:progress="5"
+            android:max="9"
+            android:paddingTop="0dp"
+            android:padding="10dp"/>
+
+    </LinearLayout>
+
+
+
+
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
@@ -35,7 +68,7 @@
             android:layout_gravity="bottom|center_horizontal"
             android:gravity="bottom|center_horizontal"
             ads:adSize="SMART_BANNER"
-            ads:adUnitId="" />
+            ads:adUnitId="ca-app-pub-5067600245065681/5001703451" />
 
     </LinearLayout>
 

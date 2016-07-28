@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">PokeMapper</string>
-    <string name="title_activity_poke_finder">PokeMapper</string>
+    <string name="app_name">PokeSensor</string>
+    <string name="title_activity_poke_finder">@string/app_name</string>
 
     <string name="action_scan">Scan</string>
     <string name="action_tuner">Scan Details</string>
@@ -32,12 +32,15 @@
     <string name="no">No</string>
     <string name="ok">Ok</string>
     <string name="getStarted">Get Started</string>
+    <string name="tapCancel">(Tap to Cancel)</string>
 
     <string name="welcomeTitle">Welcome!</string>
     <string name="welcomeMessage">Make sure to enable Location Services for the best app experience.\n\nWARNING: Be careful when using this app. Scanning could get your account banned, so use a dummy account for this app, or at least make the scans look believable. Have fun!</string>
 
     <string name="abortScan">Scan aborted</string>
     <string name="noLocationDetected">Cannot detect Location Services. Please enable Location Services for the best experience.</string>
+    <string name="timeNotGiven">Time not given</string>
+    <string name="leavingIn">Leaving in</string>
 
     <string name="tunerMessage">You can adjust the scan distance and total scan time. The scanner will scan from your position and from 8 surrounding positions which are determined by the scan distance. This will simulate you walking around a larger area, which gives better scan readings.\n\nBeware of setting values that give you an unreasonable simulated movement speed because that could increase the chances of your account getting banned.</string>
     <string name="scanSpeedLabel">Your simulated movement speed is</string>
@@ -52,5 +55,5 @@
     <string name="searchMessage">Search for any location in the world to move to it</string>
 
     <string name="aboutTitle">About</string>
-    <string name="aboutMessage">Made by Patrick Ballard (Logick LLC)\n\nUses PokeGOAPI-Java, available under GPLv3 License at https://github.com/Grover-c13/PokeGOAPI-Java\n\nUses the Trilateration library available under MIT License at https://github.com/lemmingapex/Trilateration\n\nUses the Apache Commons Math3 library available under Apache 2.0 License at http://commons.apache.org/proper/commons-math/download_math.cgi\n\nAction Bar Icons available at icons8.com\nMagnifying glass available under Creative Commons Attribution License at http://freedesignfile.com/\nPokeball image available under Creative Commons Attribution-ShareAlike License at https://commons.wikimedia.org/wiki/File:Poké_Ball.svg\nAvailable under GPLv3 License at https://github.com/MrPat/PokeMapper</string>
+    <string name="aboutMessage">Made by Patrick Ballard (Logick LLC)\n\nUses PokeGOAPI-Java, available under GPLv3 License at https://github.com/Grover-c13/PokeGOAPI-Java\n\nUses the Trilateration library available under MIT License at https://github.com/lemmingapex/Trilateration\n\nUses the Apache Commons Math3 library available under Apache 2.0 License at http://commons.apache.org/proper/commons-math/download_math.cgi\n\nAction Bar Icons available at icons8.com\nMagnifying glass available under Creative Commons Attribution License at http://freedesignfile.com/\nPokeball image available under Creative Commons Attribution-ShareAlike License at https://commons.wikimedia.org/wiki/File:Poké_Ball.svg\nAvailable under GPLv3 License at https://github.com/MrPat/PokeSensor</string>
 </resources>
