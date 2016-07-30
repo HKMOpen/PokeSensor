@@ -20,11 +20,10 @@
             android:text="Scanning..."
             android:gravity="center"
             android:padding="10dp"
-            android:paddingBottom="0dp"
-            android:textAppearance="?android:attr/textAppearanceMedium"/>
+            android:paddingBottom="0dp"/>
 
         <ProgressBar
-            style="@android:style/Widget.ProgressBar.Horizontal"
+            style="@android:style/Widget.Holo.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/scanBar"

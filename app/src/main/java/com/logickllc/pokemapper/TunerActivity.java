@@ -9,6 +9,8 @@ import android.view.MenuInflater;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.logickllc.pokemapper.api.MapHelper;
+
 public class TunerActivity extends AppCompatActivity {
     final String PREF_SCAN_DISTANCE = "ScanDistance";
     final String PREF_SCAN_TIME = "ScanTime";
@@ -29,7 +31,7 @@ public class TunerActivity extends AppCompatActivity {
         scanDistance = prefs.getInt(PREF_SCAN_DISTANCE, DEFAULT_SCAN_DISTANCE);
         scanTime = prefs.getInt(PREF_SCAN_TIME, DEFAULT_SCAN_TIME);
 
-        if (scanDistance > 180) scanDistance = 180;
+        if (scanDistance > MapHelper.MAX_SCAN_DISTANCE) scanDistance = MapHelper.MAX_SCAN_DISTANCE;
 
         final TextView distance = (TextView) findViewById(R.id.distance);
         final TextView time = (TextView) findViewById(R.id.time);
@@ -42,7 +44,7 @@ public class TunerActivity extends AppCompatActivity {
         distance.setText(scanDistance + "m");
         time.setText(scanTime + "s");
 
-        int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (PokeFinderActivity.NUM_SCAN_SECTORS - 1)) * 3.6f);
+        int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (MapHelper.NUM_SCAN_SECTORS - 1)) * 3.6f);
         int scanSpeedMiles = Math.round(scanSpeedMeters * 0.621371f);
 
         scanSpeed.setText(scanSpeedMeters + " kph (" + scanSpeedMiles + " mph)");
@@ -57,7 +59,7 @@ public class TunerActivity extends AppCompatActivity {
                 scanDistance = progress * DISTANCE_STEP;
                 distance.setText(scanDistance + "m");
 
-                int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (PokeFinderActivity.NUM_SCAN_SECTORS - 1)) * 3.6f);
+                int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (MapHelper.NUM_SCAN_SECTORS - 1)) * 3.6f);
                 int scanSpeedMiles = Math.round(scanSpeedMeters * 0.621371f);
 
                 scanSpeed.setText(scanSpeedMeters + " kph (" + scanSpeedMiles + " mph)");
@@ -84,7 +86,7 @@ public class TunerActivity extends AppCompatActivity {
                 scanTime = progress * TIME_STEP;
                 time.setText(scanTime + "s");
 
-                int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (PokeFinderActivity.NUM_SCAN_SECTORS - 1)) * 3.6f);
+                int scanSpeedMeters = Math.round((float) scanDistance / (scanTime / (float) (MapHelper.NUM_SCAN_SECTORS - 1)) * 3.6f);
                 int scanSpeedMiles = Math.round(scanSpeedMeters * 0.621371f);
 
                 scanSpeed.setText(scanSpeedMeters + " km/h (" + scanSpeedMiles + " mph)");

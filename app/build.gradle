@@ -8,8 +8,8 @@ android {
         applicationId "com.logickllc.pokemapper"
         minSdkVersion 11
         targetSdkVersion 23
-        versionCode 3
-        versionName "1.1"
+        versionCode 4
+        versionName "1.2"
         multiDexEnabled true
     }
     buildTypes {

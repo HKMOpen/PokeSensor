@@ -14,7 +14,7 @@
     <string name="action_moreapps">More Apps</string>
 
     <string name="loginTitle">Login with a Pokemon Trainer Club account</string>
-    <string name="loginMessage">This is an unofficial login to the Pokemon Go servers, so you can scan for Pokemon without using a third-party server. Your credentials will not be remembered unless you allow it, and they will not be shared with anyone (besides the Pokemon Go servers).\n\nI recommend creating a dummy account to use with this app to make sure your real account does not get soft banned.\n\nLOGIN AT YOUR OWN RISK</string>
+    <string name="loginMessage">This is an UNOFFICIAL login to the Pokemon Go servers, so you can get the Pokemon data straight from the source\n\nI recommend creating a dummy account to use with this app instead of your real account, in case scanning gets the account banned.\n\nLOGIN AT YOUR OWN RISK</string>
     <string name="username">Enter PTC Username</string>
     <string name="password">Enter PTC Password</string>
     <string name="loginButton">Login</string>
